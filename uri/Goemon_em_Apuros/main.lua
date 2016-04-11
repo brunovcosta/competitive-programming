@@ -6,6 +6,7 @@ end
 red={255,0,0}
 green={0,255,0}
 blue={0,0,255}
+yellow={255,255,0}
 white={255,255,255}
 origin = {x=320,y=240}
 holes={
@@ -87,6 +88,11 @@ function love.draw()
 			origin.x+farDistance,heights[i]+farDistance*(delta[i].y/delta[i].x)
 		}
 
+		if i%2==0 then
+			love.graphics.setColor(yellow)
+			wall = {origin.x,heights[i],origin.x,heights[i-1]}
+			love.graphics.line(wall)
+		end
 		--draw lines
 		love.graphics.setColor(green)
 		love.graphics.line(prolongedRay)
