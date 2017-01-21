@@ -1,5 +1,10 @@
 #include<cstdio>
+#include<GL/glut.h>
+#include<GL/gl.h>
+#include<GL/glu.h>
 #include<cmath>
+#include<vector>
+using namespace std;
 struct Vetor{
 	double x,y,z;
 	Vetor(void);
@@ -80,26 +85,13 @@ Nave::Nave(Vetor p1,Vetor p2,Vetor p3,Vetor p4){
 	this->p3=p3;
 	this->p4=p4;
 }
-double resposta=100000;
 double gradientDescent(Nave naveP, Nave naveQ, double a1,double a2,double a3,double a4,double b1, double b2, double b3, double b4,int passos){
 	/* p = a12*p1+a22*p2+a32*p3+a42*p4
 	 * q = b12*q1+b22*q2+b32*q3+b42*q4
 	 *
 	 * d = sqrt((px-qx)2+(py-qy)2+(pz-qz)2)
 	 */
-	double gama = 100000;
-
-	double soma_a=a1+a2+a3+a4;
-	double soma_b=b1+b2+b3+b4;
-	
-	a1/=soma_a;
-	a2/=soma_a;
-	a3/=soma_a;
-	a4/=soma_a;
-	b1/=soma_b;
-	b2/=soma_b;
-	b3/=soma_b;
-	b4/=soma_b;
+	double gama = 0.001;
 
 	double px1 = naveP.p1.x;
 	double px2 = naveP.p2.x;
@@ -136,80 +128,117 @@ double gradientDescent(Nave naveP, Nave naveQ, double a1,double a2,double a3,dou
 	double qz = (b1*b1*qz1+ b2*b2*qz2+ b3*b3*qz3+ b4*b4*qz4)/(b1*b1+ b2*b2+ b3*b3+ b4*b4);
 
 	double dist = Vetor(px,py,pz).distancia(Vetor(qx,qy,qz));
+	//printf("-------------------------\n");
+	//printf("%lf\n",dist);
+	//printf("-------------------------\n");
 
-	double da1 = -gama*a1*(px1*(px-qx) +py1*(py-qy) +pz1*(pz-qz));
-	double da2 = -gama*a2*(px2*(px-qx) +py2*(py-qy) +pz2*(pz-qz));
-	double da3 = -gama*a3*(px3*(px-qx) +py3*(py-qy) +pz3*(pz-qz));
-	double da4 = -gama*a4*(px4*(px-qx) +py4*(py-qy) +pz4*(pz-qz));
-	double db1 = +gama*b1*(qx1*(px-qx) +qy1*(py-qy) +qz1*(pz-qz));
-	double db2 = +gama*b2*(qx2*(px-qx) +qy2*(py-qy) +qz2*(pz-qz));
-	double db3 = +gama*b3*(qx3*(px-qx) +qy3*(py-qy) +qz3*(pz-qz));
-	double db4 = +gama*b4*(qx4*(px-qx) +qy4*(py-qy) +qz4*(pz-qz));
+	double da1 = -gama*a1*(px1*(px-qx) +py1*(py-qy) +pz1*(pz-qz))/dist;
+	double da2 = -gama*a2*(px2*(px-qx) +py2*(py-qy) +pz2*(pz-qz))/dist;
+	double da3 = -gama*a3*(px3*(px-qx) +py3*(py-qy) +pz3*(pz-qz))/dist;
+	double da4 = -gama*a4*(px4*(px-qx) +py4*(py-qy) +pz4*(pz-qz))/dist;
+	double db1 = +gama*b1*(qx1*(px-qx) +qy1*(py-qy) +qz1*(pz-qz))/dist;
+	double db2 = +gama*b2*(qx2*(px-qx) +qy2*(py-qy) +qz2*(pz-qz))/dist;
+	double db3 = +gama*b3*(qx3*(px-qx) +qy3*(py-qy) +qz3*(pz-qz))/dist;
+	double db4 = +gama*b4*(qx4*(px-qx) +qy4*(py-qy) +qz4*(pz-qz))/dist;
 
-	double soma_da=da1+da2+da3+da4;
-	double soma_db=db1+db2+db3+db4;
-	
-	da1=da1*gama/soma_da;
-	da2=da2*gama/soma_da;
-	da3=da3*gama/soma_da;
-	da4=da4*gama/soma_da;
-	db1=db1*gama/soma_db;
-	db2=db2*gama/soma_db;
-	db3=db3*gama/soma_db;
-	db4=db4*gama/soma_db;
-
-
-	if(resposta==dist || passos > 1000){
-		printf("-------------------------\n");
-		printf("%lf\n",dist);
-		printf("%d iteracoes\n",passos);
-		printf("%lf %lf %lf %lf %lf %lf %lf %lf \n",a1,a2,a3,a4,b1,b2,b3,b4);
-		printf("%lf %lf %lf %lf %lf %lf %lf %lf \n",da1,da2,da3,da4,db1,db2,db3,db4);
-		printf("-------------------------\n");
+	if(passos<0){
 		return dist;
+	}else{
+		return gradientDescent(naveP,naveQ,
+			a1+da1, a2+da2, a3+da3, a4+da4,
+			b1+db1, b2+db2, b3+db3, b4+db4, passos-1);
 	}
-	resposta = dist;
-
-	return gradientDescent(naveP,naveQ,
-		a1+da1, a2+da2, a3+da3, a4+da4,
-		b1+db1, b2+db2, b3+db3, b4+db4, passos+1);
 
 }
 double Nave::distancia(Nave outra){
-	return gradientDescent(*this,outra,1,1,1,1,1,1,1,1,1);
+	return gradientDescent(*this,outra,1,1,1,1,1,1,1,1,8000);
 }
-int main(){
+vector<Nave> naves;
+void desenha(){
+
+
+	//glLoadIdentity(); 
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glDepthFunc(GL_LESS);
+	glBegin(GL_TRIANGLES);
+	for(int i=0;i<naves.size();i++){
+		Vetor p1 = naves[i].p1;
+		Vetor p2 = naves[i].p2;
+		Vetor p3 = naves[i].p3;
+		Vetor p4 = naves[i].p4;
+		Vetor permut[4][3] = {
+			{p2,p3,p4},
+			{p1,p3,p4},
+			{p1,p2,p4},
+			{p1,p2,p3}
+		};
+		for(int j=0;j<4;j++){
+			glColor3f(1.0f/(i+1),1.0f/(j+1),1.0f/(i*j+1));
+			for(int k=0;k<3;k++){
+				glVertex3f((float)permut[j][k].x/10,(float)permut[j][k].y/10,(float)permut[j][k].z/10);
+			}
+		}
+	}
+	glEnd();
+	glFlush();
+}
+int prev_x,prev_y;
+void mouse_move(int x,int y){
+	glRotatef( x-prev_x, 0, 0, 1 );
+	glRotatef( y-prev_y, 0, 1, 0 );
+
+	prev_x=x;
+	prev_y=y;
+
+	desenha();
+}
+int main(int argc, char **argv){
 	int n;
 	scanf("%d",&n);
 	int i;
 	for(i=0;i<n;i++){
 		double x11,y11,z11;
-		scanf("%lf%lf%lf",&x11,&y11,&z11);
-		Vetor p11=Vetor(x11,y11,z11);
 		double x12,y12,z12;
-		scanf("%lf%lf%lf",&x12,&y12,&z12);
-		Vetor p12=Vetor(x12,y12,z12);
 		double x13,y13,z13;
-		scanf("%lf%lf%lf",&x13,&y13,&z13);
-		Vetor p13=Vetor(x13,y13,z13);
 		double x14,y14,z14;
-		scanf("%lf%lf%lf",&x14,&y14,&z14);
-		Vetor p14=Vetor(x14,y14,z14);
-		Nave nave1 = Nave(p11,p12,p13,p14);
 		double x21,y21,z21;
-		scanf("%lf%lf%lf",&x21,&y21,&z21);
-		Vetor p21=Vetor(x21,y21,z21);
 		double x22,y22,z22;
-		scanf("%lf%lf%lf",&x22,&y22,&z22);
-		Vetor p22=Vetor(x22,y22,z22);
 		double x23,y23,z23;
-		scanf("%lf%lf%lf",&x23,&y23,&z23);
-		Vetor p23=Vetor(x23,y23,z23);
 		double x24,y24,z24;
-		scanf("%lf%lf%lf",&x24,&y24,&z24);
+		Vetor p11=Vetor(x11,y11,z11);
+		Vetor p12=Vetor(x12,y12,z12);
+		Vetor p13=Vetor(x13,y13,z13);
+		Vetor p14=Vetor(x14,y14,z14);
+		Vetor p21=Vetor(x21,y21,z21);
+		Vetor p22=Vetor(x22,y22,z22);
+		Vetor p23=Vetor(x23,y23,z23);
 		Vetor p24=Vetor(x24,y24,z24);
+		Nave nave1 = Nave(p11,p12,p13,p14);
 		Nave nave2 = Nave(p21,p22,p23,p24);
+		
+		scanf("%lf%lf%lf",&x11,&y11,&z11);
+		scanf("%lf%lf%lf",&x12,&y12,&z12);
+		scanf("%lf%lf%lf",&x13,&y13,&z13);
+		scanf("%lf%lf%lf",&x14,&y14,&z14);
+		scanf("%lf%lf%lf",&x21,&y21,&z21);
+		scanf("%lf%lf%lf",&x22,&y22,&z22);
+		scanf("%lf%lf%lf",&x23,&y23,&z23);
+		scanf("%lf%lf%lf",&x24,&y24,&z24);
 		printf("%.2lf\n",nave1.distancia(nave2));
+
+		naves.push_back(nave1);
+		naves.push_back(nave2);
 	}
+	glutInit(&argc,argv);
+	glutCreateWindow("GUERRA NAS ESTRELAS");
+	glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH);
+	glEnable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
+	glDepthFunc(GL_LEQUAL);
+	glDepthRange(0.0f, 1.0f);
+	glutDisplayFunc(desenha);
+	glutMotionFunc(mouse_move);
+	glClearColor(0,0,0,0);
+	glutMainLoop();
 	return 0;
 }
